@@ -5,12 +5,38 @@ import enrollmentRepository, { CreateEnrollmentParams } from "@/repositories/enr
 import { exclude } from "@/utils/prisma-utils";
 import { Address, Enrollment } from "@prisma/client";
 
-async function getAddressFromCEP() {
-  const result = await request.get("https://viacep.com.br/ws/37440000/json/");
-
+async function getAddressFromCEP(cep: string): Promise<GetAddressFromCEPResponse> {
+  const result = await request.get<ViaCEPResponse>(`https://viacep.com.br/ws/${cep}/json/`);
   if (!result.data) {
     throw notFoundError();
   }
+  
+  const data: ViaCEPResponse = result.data as ViaCEPResponse;
+  const address: GetAddressFromCEPResponse = {
+    logradouro: data.logradouro,
+    complemento: data.complemento,
+    bairro: data.bairro,
+    cidade: data.localidade,
+    uf: data.uf
+  };
+
+  return address;
+}
+
+interface ViaCEPResponse {
+  logradouro: string,
+  complemento: string,
+  bairro: string,
+  localidade: string,
+  uf: string
+}
+
+interface GetAddressFromCEPResponse {
+  logradouro: ViaCEPResponse["logradouro"],
+  complemento: ViaCEPResponse["complemento"],
+  bairro: ViaCEPResponse["bairro"],
+  cidade: ViaCEPResponse["localidade"],
+  uf: ViaCEPResponse["uf"]
 }
 
 async function getOneWithAddressByUserId(userId: number): Promise<GetOneWithAddressByUserIdResult> {
